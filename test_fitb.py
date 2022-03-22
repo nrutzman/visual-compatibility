@@ -13,6 +13,8 @@ from utils import construct_feed_dict
 from model.CompatibilityGAE import CompatibilityGAE
 from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen, DataLoaderPOG
 
+from tqdm import tqdm
+
 def test_fitb(args):
     args = namedtuple("Args", args.keys())(*args.values())
     load_from = args.load_from
@@ -38,10 +40,12 @@ def test_fitb(args):
         return normalize_nonsym_adj(adj_to_norm)
 
     # Dataloader
-    if DATASET == 'fashiongen':
-        dl = DataLoaderFashionGen()
+    if DATASET == 'pog':
+        dl = DataLoaderPOG()
     elif DATASET == 'polyvore':
         dl = DataLoaderPolyvore()
+    elif DATASET == 'fashiongen':
+        dl = DataLoaderFashionGen()
 
     train_features, adj_train, train_labels, train_r_indices, train_c_indices = dl.get_phase('train')
     val_features, adj_val, val_labels, val_r_indices, val_c_indices = dl.get_phase('valid')
@@ -116,7 +120,7 @@ def test_fitb(args):
         kwargs = {'K': args.k, 'subset': args.subset,
                 'resampled': args.resampled, 'expand_outfit':args.expand_outfit}
 
-        for question_adj, out_ids, choices_ids, labels, valid in dl.yield_test_questions_K_edges(**kwargs):
+        for question_adj, out_ids, choices_ids, labels, valid in tqdm(dl.yield_test_questions_K_edges(**kwargs), total=len(dl.questions)):
             q_support = get_degree_supports(question_adj, config['degree'], adj_self_con=ADJ_SELF_CONNECTIONS, verbose=False)
             for i in range(1, len(q_support)):
                 q_support[i] = norm_adj(q_support[i])
@@ -137,7 +141,8 @@ def test_fitb(args):
             num_processed += 1
             correct += int(predicted == gt)
 
-            print("[{}] Acc: {}".format(num_processed, correct/num_processed))
+            #print("[{}] Acc: {}".format(num_processed, correct/num_processed))
+    print("[{}] Acc: {}".format(num_processed, correct/num_processed))
 
     print('Best val score saved in log: {}'.format(config['best_val_score']))
     print('Last val score saved in log: {}'.format(log['val']['acc'][-1]))

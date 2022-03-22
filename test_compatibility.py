@@ -15,7 +15,9 @@ from collections import namedtuple
 from utils import get_degree_supports, sparse_to_tuple, normalize_nonsym_adj
 from utils import construct_feed_dict, Graph
 from model.CompatibilityGAE import CompatibilityGAE
-from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen
+from dataloaders import DataLoaderPolyvore, DataLoaderFashionGen, DataLoaderPOG
+
+from tqdm import tqdm
 
 def compute_auc(preds, labels):
     return roc_auc_score(labels.astype(int), preds)
@@ -37,7 +39,7 @@ def test_compatibility(args):
         DATASET = args.dataset
     else:
         DATASET = config['dataset']
-        
+
     if DATASET == 'polyvore':
         # load dataset
         dl = DataLoaderPolyvore()
@@ -140,7 +142,7 @@ def test_compatibility(args):
         prob_act = tf.nn.sigmoid
 
         K = args.k
-        for outfit in dl.comp_outfits:
+        for outfit in tqdm(dl.comp_outfits):
             before_item = time.time()
             items, score = outfit
 
@@ -206,9 +208,9 @@ def test_compatibility(args):
             pred = sess.run(prob_act(model.outputs), feed_dict=new_feed_dict)
 
             predicted_score = pred.mean()
-            print("[{}] Mean scores between outfit: {:.4f}, label: {}".format(count, predicted_score, score))
+            #print("[{}] Mean scores between outfit: {:.4f}, label: {}".format(count, predicted_score, score))
             # TODO: remove this print
-            print("Total Elapsed: {:.4f}".format(time.time() - before_item))
+            #print("Total Elapsed: {:.4f}".format(time.time() - before_item))
             count += 1
 
             preds.append(predicted_score)
